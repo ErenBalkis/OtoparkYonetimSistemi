@@ -16,14 +16,14 @@ int main() {
     // Otopark nesnesini oluştur (Örn: "Merkez Otopark", 20 Kapasite)
     Otopark otopark("Istanbul Uni Otopark", 20);
 
-    // Verileri dosyadan yükle (Proje gereksinimi)
-    // otopark.verileriYukle(); // Henüz fonksiyon boş olduğu için yorum satırı yapabilirsin
+    // Verileri dosyadan yükle 
+    // otopark.verileriYukle(); 
 
     int secim;
     bool devam = true;
 
     while (devam) {
-        // ekraniTemizle(); // İstersen aktifleştirebilirsin
+        ekraniTemizle(); 
         std::cout << "\n=== OTOPARK YONETIM SISTEMI ===\n";
         std::cout << "1. Arac Girisi Yap\n";
         std::cout << "2. Arac Cikisi Yap\n";
@@ -32,7 +32,7 @@ int main() {
         std::cout << "0. Cikis ve Kaydet\n";
         std::cout << "Seciminiz: ";
 
-        // Hata yakalama bloğu (Exception Handling - Bonus Puan)
+        // Hata yakalama bloğu 
         try {
             if (!(std::cin >> secim)) {
                 throw std::runtime_error("Gecersiz giris! Lutfen sayi giriniz.");
@@ -77,7 +77,7 @@ int main() {
                     break;
                 case 0:
                     std::cout << "Veriler kaydediliyor ve cikiliyor...\n";
-                    // otopark.verileriKaydet();
+                    otopark.verileriKaydet();
                     devam = false;
                     break;
                 default:
