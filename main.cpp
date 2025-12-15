@@ -17,7 +17,7 @@ int main() {
     Otopark otopark("Istanbul Uni Otopark", 20);
 
     // Verileri dosyadan yükle 
-    // otopark.verileriYukle(); 
+    otopark.verileriYukle(); 
 
     int secim;
     bool devam = true;
