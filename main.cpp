@@ -1,5 +1,5 @@
 #include <iostream>
-#include <limits> // cin.ignore için gerekli
+#include <limits> 
 #include "Otopark.h"
 #include "AracTurleri.h"
 
@@ -17,18 +17,19 @@ int main() {
     Otopark otopark("Istanbul Uni Otopark", 20);
 
     // Verileri dosyadan yükle 
-    otopark.verileriYukle(); 
+    // otopark.verileriYukle(); 
 
     int secim;
     bool devam = true;
 
     while (devam) {
-        ekraniTemizle(); 
+        // ekraniTemizle(); 
         std::cout << "\n=== OTOPARK YONETIM SISTEMI ===\n";
         std::cout << "1. Arac Girisi Yap\n";
         std::cout << "2. Arac Cikisi Yap\n";
         std::cout << "3. Bos Park Yerlerini Listele\n";
         std::cout << "4. Durum Raporu (Bonus)\n";
+        std::cout << "5. Test Verisi Yukle (Demo Modu)\n";
         std::cout << "0. Cikis ve Kaydet\n";
         std::cout << "Seciminiz: ";
 
@@ -69,17 +70,29 @@ int main() {
                     otopark.aracCikis(plaka);
                     break;
                 }
-                case 3:
+                case 3: {
                     otopark.bosYerleriListele();
                     break;
-                case 4:
+                }
+                case 4: {
                     otopark.durumRaporu();
                     break;
-                case 0:
+                }
+                case 5: {
+                    std::cout << "Test verileri yukleniyor...\n";
+                    // Polimorfizm Örneği: Farklı türleri aynı fonksiyona yolluyoruz
+                    otopark.aracGiris(new Otomobil("34 ABC 123"));
+                    otopark.aracGiris(new Kamyonet("34 XYZ 789")); 
+                    otopark.aracGiris(new Motosiklet("35 KL 55"));
+                    std::cout << "3 Arac sisteme eklendi.\n";
+                    break;
+                }
+                case 0: {
                     std::cout << "Veriler kaydediliyor ve cikiliyor...\n";
-                    otopark.verileriKaydet();
+                    // otopark.verileriKaydet();
                     devam = false;
                     break;
+                }
                 default:
                     std::cout << "Gecersiz secim, tekrar deneyin.\n";
             }
