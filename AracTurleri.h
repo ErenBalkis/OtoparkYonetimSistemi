@@ -1,7 +1,10 @@
 #ifndef ARACTURLERI_H
 #define ARACTURLERI_H
 
+#include <string>
 #include "Arac.h"
+
+
 
 // Otomobil Sınıfı
 class Otomobil : public Arac {
