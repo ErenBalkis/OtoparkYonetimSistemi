@@ -1,20 +1,26 @@
 #include "ParkYeri.h"
 
-//Yapıcı metot (nesne ilk oluştuğunda çalışır)
-ParkYeri::ParkYeri(int id, int kat) : id(id), kat(kat), doluMu(false){}
+ParkYeri::ParkYeri(int id, int kat) 
+    : id(id), kat(kat), doluMu(false), parkEdenPlaka("") {}
 
-//Park yeri dolu mu boş mu kontrolü
 bool ParkYeri::isDolu() const {
     return doluMu;
 }
-//Park yernin durumunu günceller (araç girdiğinde true çıktığında false)
-void ParkYeri::setDurum(bool durum) {
+
+// Araç girdiğinde plaka atanır, çıktığında boşaltılır
+void ParkYeri::setDurum(bool durum, std::string plaka) {
     doluMu = durum;
+    parkEdenPlaka = durum ? plaka : "";
 }
 
 int ParkYeri::getId() const {
     return id;
 }
+
 int ParkYeri::getKat() const {
     return kat;
+}
+
+std::string ParkYeri::getPlaka() const {
+    return parkEdenPlaka;
 }
