@@ -10,24 +10,36 @@
     - Hata yönetimi try-catch ile sağlanmıştır
 */
 
+// Ekranı temizlemek için yardımcı fonksiyon (Linux/Windows uyumlu)
+void ekraniTemizle() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+
 int main() {
 
-    // Otopark nesnesi oluşturuluyor (isim + kapasite)
+    // Otopark nesnesini oluştur (Örn: "Merkez Otopark", 20 Kapasite)
     Otopark otopark("Istanbul Uni Otopark", 20);
+
+    // Verileri dosyadan yükle 
+    // otopark.verileriYukle(); 
 
     int secim;          // Kullanıcı menü seçimi
     bool devam = true;  // Program döngü kontrolü
 
     // Ana menü döngüsü
     while (devam) {
-
+        // ekraniTemizle(); 
         // Menü ekranı
         std::cout << "\n=== OTOPARK YONETIM SISTEMI ===\n";
         std::cout << "1. Arac Girisi Yap\n";
         std::cout << "2. Arac Cikisi Yap\n";
         std::cout << "3. Bos Park Yerlerini Listele\n";
         std::cout << "4. Durum Raporu\n";
-        std::cout << "5. Test Verisi Yukle (Demo)\n";
+        std::cout << "5. Test Verisi Yukle (Demo Modu)\n";
         std::cout << "0. Cikis\n";
         std::cout << "Seciminiz: ";
 
@@ -47,7 +59,8 @@ int main() {
                     int turSecim;
 
                     // Araç türü seçimi
-                    std::cout << "1-Otomobil 2-Kamyonet 3-Motosiklet: ";
+                    std::cout << "\n--- Arac Turu Seciniz ---\n";
+                    std::cout << "1. Otomobil\n2. Kamyonet\n3. Motosiklet\n";
                     std::cin >> turSecim;
 
                     // Tampon temizleme
@@ -119,18 +132,21 @@ int main() {
 
                 // ---------------- PROGRAMDAN ÇIKIŞ ----------------
                 case 0:
+                    std::cout << "Veriler kaydediliyor ve cikiliyor...\n";
+                    // otopark.verileriKaydet();
                     devam = false;
-                    std::cout << "Programdan cikiliyor...\n";
                     break;
 
                 // ---------------- HATALI SEÇİM ----------------
                 default:
-                    std::cout << "Gecersiz menu secimi!\n";
+                    std::cout << "Gecersiz menu secimi, tekrar deneyin!\n";
             }
         }
         catch (const std::exception& e) {
             // Genel hata yakalama
-            std::cerr << "HATA: " << e.what() << "\n";
+            std::cerr << "\nHATA: " << e.what() << "\n";
+            std::cin.clear(); // Hata bayrağını temizle
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Tamponu temizle
         }
     }
 
