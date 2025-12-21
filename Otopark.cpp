@@ -4,6 +4,7 @@
 #include <fstream>
 #include "ParkYeri.h"
 #include <stdexcept>  //exception için
+#include <algorithm> // replace işlemi için gerekli
 
 //Yapıcı metot (nesne ilk oluştuğunda çalışır)
 Otopark::Otopark(std::string ad, int kapasite) : otoparkAdi(ad) {
@@ -16,8 +17,10 @@ Otopark::Otopark(std::string ad, int kapasite) : otoparkAdi(ad) {
 
 //Yıkıcı metot (belleği temizleyecek)
 
-
+// Yıkıcı metot (DÜZELTME: Program kapanırken otomatik kaydet)
 Otopark::~Otopark() {
+    verileriKaydet(); // Program aniden bitse bile kaydetmeyi dener
+
     for (Arac* arac : aktifAraclar) {
         delete arac;
     }
@@ -40,7 +43,7 @@ int Otopark::bosParkYeriBul() {
 // ARAÇ GİRİŞİ: Aracı listeye ekler ve park yerini doldurur
 void Otopark::aracGiris(Arac* yeniArac) {
     int index = bosParkYeriBul();
-    
+
     if (index == -1) {
         std::cout << "HATA: Otopark dolu! " << yeniArac->getPlaka() << " iceri alinamaz.\n";
         return;
@@ -48,12 +51,12 @@ void Otopark::aracGiris(Arac* yeniArac) {
 
     // Park yerini güncelle (Plaka ile birlikte)
     parkYerleri[index].setDurum(true, yeniArac->getPlaka());
-    
+
     // Aracı aktif araçlar listesine ekle
     aktifAraclar.push_back(yeniArac);
 
-    std::cout << "Giris Basarili: " << yeniArac->getPlaka() 
-              << " -> Yer: " << parkYerleri[index].getId() 
+    std::cout << "Giris Basarili: " << yeniArac->getPlaka()
+              << " -> Yer: " << parkYerleri[index].getId()
               << " (Kat: " << parkYerleri[index].getKat() << ")\n";
 }
 
@@ -78,7 +81,7 @@ void Otopark::aracCikis(std::string plaka) {
             // 3. Bellekten ve listeden sil (Senin en önemli görevin)
             delete *it;
             aktifAraclar.erase(it);
-            
+
             bulundu = true;
             std::cout << "Islem tamamlandi. Gule gule!\n";
             break;
@@ -94,22 +97,27 @@ void Otopark::aracCikis(std::string plaka) {
 
 void Otopark::verileriKaydet() {
     std::ofstream dosya("ParkYerleri.txt");
-    
+
     try {
         if (!dosya.is_open()) {
             throw std::runtime_error("Dosya yazma hatasi: ParkYerleri.txt acilamadi!");
         }
 
-        // Park yerlerini plaka bilgisiyle birlikte kaydediyoruz
         for (const ParkYeri& yer : parkYerleri) {
-            dosya << yer.getKat() << " " 
-                  << yer.getId() << " " 
-                  << yer.isDolu() << " " 
-                  << (yer.isDolu() ? yer.getPlaka() : "BOS") << "\n";
+            std::string kaydedilecekPlaka = yer.isDolu() ? yer.getPlaka() : "BOS";
+
+            // DÜZELTME: Plakadaki boşlukları alt çizgi yap (34 ABC 12 -> 34_ABC_12)
+            // Böylece dosyadan okurken tek parça okunabilir.
+            std::replace(kaydedilecekPlaka.begin(), kaydedilecekPlaka.end(), ' ', '_');
+
+            dosya << yer.getKat() << " "
+                  << yer.getId() << " "
+                  << yer.isDolu() << " "
+                  << kaydedilecekPlaka << "\n";
         }
 
         dosya.close();
-        std::cout << "Veriler (Plakalar dahil) basariyla kaydedildi.\n";
+        std::cout << "Veriler kaydedildi.\n";
     }
     catch (const std::exception& e) {
         std::cerr << "KRITIK HATA: " << e.what() << "\n";
@@ -118,17 +126,32 @@ void Otopark::verileriKaydet() {
 
 void Otopark::verileriYukle() {
     std::ifstream dosya("ParkYerleri.txt");
-    if (!dosya.is_open()) return;
+    if (!dosya.is_open()) {
+        std::cout << "Kayitli veri bulunamadi, yeni otopark baslatiliyor.\n";
+        return;
+    }
 
     int kat, id;
     bool dolu;
     std::string plaka;
     int index = 0;
 
-    // Dosyadan plaka bilgisini de okuyoruz
+    // Dosyadan okuma
     while (dosya >> kat >> id >> dolu >> plaka && index < (int)parkYerleri.size()) {
+
+        // DÜZELTME: Okunan plakadaki alt çizgileri tekrar boşluğa çevir (34_ABC_12 -> 34 ABC 12)
+        std::replace(plaka.begin(), plaka.end(), '_', ' ');
+
         if (dolu) {
             parkYerleri[index].setDurum(true, (plaka == "BOS" ? "" : plaka));
+
+            // NOT: Dosyadan yüklenen araçları 'aktifAraclar' listesine de eklememiz lazım
+            // Yoksa çıkış yaparken sistem aracı bulamaz!
+            // Demo amaçlı hepsini varsayılan olarak Otomobil ekliyoruz (Çünkü dosya tür bilgisini tutmuyor)
+            if (plaka != "BOS") {
+                 aktifAraclar.push_back(new Otomobil(plaka));
+            }
+
         } else {
             parkYerleri[index].setDurum(false, "");
         }
@@ -138,8 +161,6 @@ void Otopark::verileriYukle() {
     dosya.close();
     std::cout << "Otopark durumu ve plakalar dosyadan yuklendi.\n";
 }
-
-// --- DURUM RAPORLARI ---
 
 void Otopark::bosYerleriListele() const {
     std::cout << "\n--- Bos Park Yerleri ---\n";
