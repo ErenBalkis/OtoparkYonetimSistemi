@@ -1,9 +1,24 @@
+# Build klasörü
 build/
+
+# Derleme çıktıları
 *.o
 *.exe
+*.out
+
+# IDE ayarları
 .vscode/
+
+# CMake dosyaları
 CMakeCache.txt
 cmake_install.cmake
 Makefile
 CMakeFiles/
-OtoparkSistemi
+
+# Windows
+*.dll
+*.lib
+*.pdb
+
+# macOS
+.DS_Store
