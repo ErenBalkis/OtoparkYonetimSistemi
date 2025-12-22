@@ -69,7 +69,7 @@ public:
     /*
         Bilgi Yazdırma Fonksiyonu
         - Sanal (virtual) olarak tanımlanmıştır
-        - Türetilmiş sınıflar isterse bu fonksiyonu ezebilir
+        - Türetilmiş sınıflar tarafından yeniden tanımlanabilir (override)
     */
     virtual void bilgileriYazdir() const;
 };
