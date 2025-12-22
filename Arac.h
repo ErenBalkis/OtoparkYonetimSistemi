@@ -42,7 +42,8 @@ public:
           doğru şekilde çağrılmasını sağlar
     */
     virtual ~Arac() {}
-
+    // Giriş saatini ayarlar
+    void setGirisSaati(std::time_t saat) { girisSaati = saat; }
     /*
         SAF SANAL FONKSİYON (PURE VIRTUAL)
         - Her araç türü kendi ücret hesaplama mantığını

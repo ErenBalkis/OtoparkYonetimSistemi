@@ -25,7 +25,7 @@ int main() {
     Otopark otopark("Istanbul Uni Otopark", 20);
 
     // Verileri dosyadan yükle 
-    // otopark.verileriYukle(); 
+     otopark.verileriYukle(); 
 
     int secim;          // Kullanıcı menü seçimi
     bool devam = true;  // Program döngü kontrolü
@@ -133,7 +133,7 @@ int main() {
                 // ---------------- PROGRAMDAN ÇIKIŞ ----------------
                 case 0:
                     std::cout << "Veriler kaydediliyor ve cikiliyor...\n";
-                    // otopark.verileriKaydet();
+                     otopark.verileriKaydet();
                     devam = false;
                     break;
 
