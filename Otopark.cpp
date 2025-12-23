@@ -103,7 +103,7 @@ void Otopark::verileriKaydet() {
     try {
         if (!dosya.is_open()) throw std::runtime_error("ParkYerleri.txt acilamadi!");
 
-        dosya << "Kat ID Dolu Plaka Tur Giris_Saniyesi Mevcut_Ucret Giris_Tarihi\n"; // Başlık satırı
+        dosya << "Kat ID Dolu Plaka Tur Giris_Saniyesi Mevcut_Ucret Giris_Tarihi\n"; 
         dosya << "------------------------------------------------------------------\n";
 
         for (const ParkYeri& yer : parkYerleri) {
@@ -114,38 +114,42 @@ void Otopark::verileriKaydet() {
             std::string okunabilirZaman = "---";
 
             if (yer.isDolu()) {
+                // Aktif araçlar listesinde bu plakayı bul
                 for (Arac* a : aktifAraclar) {
                     if (a->getPlaka() == yer.getPlaka()) {
                         tur = a->getTur();
                         girisSaniye = (long int)a->getGirisSaati();
-                        ucret = a->hesaplaUcret(); // O ana kadarki ücret
+                        ucret = a->hesaplaUcret();
                         
-                        // Saniyeyi okunabilir tarihe çevir
+                        // --- DÜZELTME BAŞLANGIÇ (Standart C++ Tarih Formatı) ---
                         time_t t = a->getGirisSaati();
-                        char buffer[26];
-                        ctime_s(buffer, sizeof(buffer), &t); 
-                        okunabilirZaman = buffer;
-                        okunabilirZaman.erase(okunabilirZaman.find_last_not_of(" \n\r\t") + 1); // Satır sonu temizliği
+                        char* dt = std::ctime(&t); // Standart ctime kullanımı
+                        okunabilirZaman = dt ? dt : "Hata";
+                        // ctime sonuna \n koyar, onu silelim:
+                        if (!okunabilirZaman.empty() && okunabilirZaman.back() == '\n') {
+                            okunabilirZaman.pop_back();
+                        }
+                        // --- DÜZELTME BİTİŞ ---
                         break;
                     }
                 }
             }
 
-            // Boşlukları alt tireye çevir ki geri okurken hata olmasın
-            std::replace(plaka.begin(), plaka.end(), ' ', '_');
+            // Plakadaki boşlukları _ yap
+            std::string dosyaPlaka = plaka; // Orijinal plakayı bozmamak için kopya aldık
+            std::replace(dosyaPlaka.begin(), dosyaPlaka.end(), ' ', '_');
             
-            // Format: Kat ID Dolu Plaka Tur Saniye Ücret Tarih
             dosya << yer.getKat() << " " 
                   << yer.getId() << " " 
                   << yer.isDolu() << " " 
-                  << plaka << " " 
+                  << dosyaPlaka << " "   // Düzeltilmiş plakayı yaz
                   << tur << " " 
                   << girisSaniye << " " 
                   << ucret << " TL " 
                   << okunabilirZaman << "\n";
         }
         dosya.close();
-        std::cout << "Sistem durumu ve ucretler 'ParkYerleri.txt' dosyasina kaydedildi.\n";
+        // std::cout << "Kaydedildi...\n"; // Konsolu kirletmemek için kapatabilirsin
     } catch (const std::exception& e) { std::cerr << e.what() << "\n"; }
 }
 
@@ -153,12 +157,28 @@ void Otopark::verileriYukle() {
     std::ifstream dosya("ParkYerleri.txt");
     if (!dosya.is_open()) return;
 
-    int kat, id; bool dolu;
+    // Dosyanın ilk iki satırı başlık olduğu için onları boşa okuyup geçmeliyiz
+    std::string baslikSatiri;
+    std::getline(dosya, baslikSatiri); // "Kat ID..." satirini oku ve geç
+    std::getline(dosya, baslikSatiri); // "----..." satirini oku ve geç
+
+    int kat, id; 
+    bool dolu;
     std::string plaka, tur;
     long int girisZamani;
+    
+    // index sayacını kullanmak yerine dosyadan okunan ID'ye göre işlem yapmak daha güvenlidir
+    // ama senin kod yapını bozmadan index ile devam edelim.
+    int index = 0; 
 
-    int index = 0;
-    while (dosya >> kat >> id >> dolu >> plaka >> tur >> girisZamani && index < (int)parkYerleri.size()) {
+    // Dikkat: index kontrolünü while içine ekledim
+    while (index < (int)parkYerleri.size() && dosya >> kat >> id >> dolu >> plaka >> tur >> girisZamani) {
+        
+        // KRİTİK DÜZELTME: Satırın geri kalanını (Ücret, TL, Tarih vs.) oku ve yut.
+        // Böylece imleç bir sonraki satırın başına geçer.
+        std::string kalanSatir;
+        std::getline(dosya, kalanSatir); 
+
         std::replace(plaka.begin(), plaka.end(), '_', ' ');
 
         if (dolu && plaka != "BOS") {
@@ -170,9 +190,12 @@ void Otopark::verileriYukle() {
             else if (tur == "Motosiklet") yeniArac = new Motosiklet(plaka);
 
             if (yeniArac) {
-                yeniArac->setGirisSaati((time_t)girisZamani); // Zamanı geri yükle
+                yeniArac->setGirisSaati((time_t)girisZamani); 
                 aktifAraclar.push_back(yeniArac);
             }
+        } else {
+            // Eğer dosyadaki o satır boşsa, park yerini de boş olarak ayarla/garantiye al
+             parkYerleri[index].setDurum(false, "");
         }
         index++;
     }
