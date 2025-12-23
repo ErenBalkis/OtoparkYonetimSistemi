@@ -10,14 +10,6 @@
     - Hata yönetimi try-catch ile sağlanmıştır
 */
 
-// Ekranı temizlemek için yardımcı fonksiyon (Linux/Windows uyumlu)
-void ekraniTemizle() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
-}
 
 int main() {
 
@@ -25,14 +17,13 @@ int main() {
     Otopark otopark("Istanbul Uni Otopark", 20);
 
     // Verileri dosyadan yükle 
-     otopark.verileriYukle(); 
+    otopark.verileriYukle(); 
 
     int secim;          // Kullanıcı menü seçimi
     bool devam = true;  // Program döngü kontrolü
 
     // Ana menü döngüsü
     while (devam) {
-        // ekraniTemizle(); 
         // Menü ekranı
         std::cout << "\n=== OTOPARK YONETIM SISTEMI ===\n";
         std::cout << "1. Arac Girisi Yap\n";
@@ -152,4 +143,3 @@ int main() {
 
     return 0;
 }
-
