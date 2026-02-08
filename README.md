@@ -7,12 +7,12 @@ Bu proje, C++17 standartları kullanılarak geliştirilmiş, Nesne Yönelimli Pr
 Aşağıda uygulamanın çalışma anına ait ekran görüntüleri yer almaktadır:
 
 ### 1. Ana Menü ve Durum Paneli
-![Ana Menü Görünümü](BURAYA_ANA_MENU_EKRAN_GORUNTUSU_LINKINI_YAPISTIR)
+![Ana Menü Görünümü](https://github.com/ErenBalkis/OtoparkYonetimSistemi/blob/main/screenshots/terminal-1.png)
 
 <br>
 
 ### 2. Araç Giriş/Çıkış İşlemleri
-![İşlem Ekranı Görünümü](BURAYA_ISLEM_EKRAN_GORUNTUSU_LINKINI_YAPISTIR)
+![İşlem Ekranı Görünümü](https://github.com/ErenBalkis/OtoparkYonetimSistemi/blob/main/screenshots/terminal-2.png)
 
 ---
 
