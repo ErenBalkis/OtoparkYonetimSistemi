@@ -1,55 +1,52 @@
 #ifndef ARACTURLERI_H
 #define ARACTURLERI_H
 
-#include <string>
 #include "Arac.h"
+#include <string>
 
-/*
-    ARAÇ TÜRLERİ SINIFLARI
-    --------------------------------
-    - Arac soyut sınıfından türeyen somut (concrete) sınıfları içerir
-    - Her araç türü kendi ücret hesaplama mantığını uygular
-    - Polimorfizm bu sınıflar aracılığıyla sağlanır
-*/
+/**
+ * ARAÇ TÜRLERİ SINIFLARI
+ * --------------------------------
+ * - Arac soyut sınıfından türeyen somut (concrete) sınıfları içerir
+ * - Her araç türü kendi ücret tarifesini tanımlar
+ * - Zaman bazlı dinamik ücretlendirme kullanır
+ *
+ * ÜCRET FORMÜLÜ:
+ * Toplam = Baz Ücret + (Saat - 1) * Saatlik Ücret
+ * (İlk saat baz ücrete dahildir)
+ */
 
 // ==================== OTOMOBİL ====================
-
-// Otomobil sınıfı
-// Arac sınıfından türetilmiştir
 class Otomobil : public Arac {
 public:
-    // Constructor: Plaka bilgisi alır
-    Otomobil(std::string p);
+  // Ücretlendirme Sabitleri
+  static constexpr double BAZ_UCRET = 50.0;     // TL - İlk saat
+  static constexpr double SAATLIK_UCRET = 10.0; // TL - Her ek saat
 
-    // Otomobil için ücret hesaplama fonksiyonu
-    // Arac sınıfındaki saf sanal fonksiyonu override eder
-    double hesaplaUcret() const override; 
+  explicit Otomobil(const std::string &p);
+  double hesaplaUcret() const override;
 };
 
 // ==================== KAMYONET ====================
-
-// Kamyonet sınıfı
-// Arac sınıfından türetilmiştir
 class Kamyonet : public Arac {
 public:
-    // Constructor
-    Kamyonet(std::string p);
+  // Ücretlendirme Sabitleri (Daha büyük araç = Daha yüksek ücret)
+  static constexpr double BAZ_UCRET = 80.0;     // TL - İlk saat
+  static constexpr double SAATLIK_UCRET = 15.0; // TL - Her ek saat
 
-    // Kamyonet için ücret hesaplama fonksiyonu
-    double hesaplaUcret() const override;
+  explicit Kamyonet(const std::string &p);
+  double hesaplaUcret() const override;
 };
 
 // ==================== MOTOSİKLET ====================
-
-// Motosiklet sınıfı
-// Arac sınıfından türetilmiştir
 class Motosiklet : public Arac {
 public:
-    // Constructor
-    Motosiklet(std::string p);
+  // Ücretlendirme Sabitleri (Küçük araç = Düşük ücret)
+  static constexpr double BAZ_UCRET = 30.0;    // TL - İlk saat
+  static constexpr double SAATLIK_UCRET = 5.0; // TL - Her ek saat
 
-    // Motosiklet için ücret hesaplama fonksiyonu
-    double hesaplaUcret() const override;
+  explicit Motosiklet(const std::string &p);
+  double hesaplaUcret() const override;
 };
 
 #endif // ARACTURLERI_H

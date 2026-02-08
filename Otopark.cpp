@@ -1,225 +1,321 @@
 #include "Otopark.h"
 #include "AracTurleri.h"
-#include <iostream>
-#include <fstream>
-#include "ParkYeri.h"
-#include <stdexcept>
 #include <algorithm>
 #include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
-Otopark::Otopark(std::string ad, int kapasite) : otoparkAdi(ad) {
-    for (int i = 1; i <= kapasite; ++i) {
-        int kat = (i <= 20) ? 1 : 2;
-        parkYerleri.push_back(ParkYeri(i, kat));
-    }
+/**
+ * OTOPARK YÖNETİM SINIFI IMPLEMENTASYONU
+ * --------------------------------
+ * - std::unique_ptr ile bellek yönetimi
+ * - CSV formatında veri kalıcılığı
+ * - Zaman bazlı ücretlendirme desteği
+ */
+
+// ==================== CONSTRUCTOR & DESTRUCTOR ====================
+
+Otopark::Otopark(const std::string &ad, int kapasite) : otoparkAdi(ad) {
+  // Park yerlerini oluştur (2 kat varsayımı)
+  for (int i = 1; i <= kapasite; ++i) {
+    int kat = (i <= kapasite / 2) ? 1 : 2;
+    parkYerleri.emplace_back(i, kat);
+  }
 }
 
 Otopark::~Otopark() {
-    verileriKaydet(); 
-    for (Arac* arac : aktifAraclar) {
-        delete arac;
-    }
-    aktifAraclar.clear();
+  // Çıkışta verileri kaydet
+  verileriKaydet();
+  // unique_ptr sayesinde araçlar otomatik temizlenir
 }
 
-int Otopark::bosParkYeriBul() {
-    for (int i = 0; i < (int)parkYerleri.size(); ++i) {
-        if (!parkYerleri[i].isDolu()) return i;
+// ==================== YARDIMCI METOTLAR ====================
+
+int Otopark::bosParkYeriBul() const {
+  for (size_t i = 0; i < parkYerleri.size(); ++i) {
+    if (!parkYerleri[i].isDolu()) {
+      return static_cast<int>(i);
     }
-    return -1;
+  }
+  return -1;
 }
 
-void Otopark::aracGiris(Arac* yeniArac) {
-    int index = bosParkYeriBul();
-    if (index == -1) {
-        std::cout << "HATA: Otopark dolu!\n";
-        delete yeniArac; // Bellek sızıntısını önlemek için nesneyi sil
-        return;
+int Otopark::bosYerSayisi() const {
+  int sayac = 0;
+  for (const auto &yer : parkYerleri) {
+    if (!yer.isDolu()) {
+      ++sayac;
     }
-    parkYerleri[index].setDurum(true, yeniArac->getPlaka());
-    aktifAraclar.push_back(yeniArac);
-    std::cout << "Giris: " << yeniArac->getPlaka() << " [" << yeniArac->getTur() << "]\n";
+  }
+  return sayac;
 }
 
-void Otopark::aracCikis(std::string plaka) {
-    bool bulundu = false;
+// ==================== ARAÇ GİRİŞ/ÇIKIŞ ====================
 
-    // 1. Aktif araçlar listesinde plakayı ara
-    for (auto it = aktifAraclar.begin(); it != aktifAraclar.end(); ++it) {
-        if ((*it)->getPlaka() == plaka) {
-            
-            // 2. Ücreti hesapla (Polimorfizm: Arac türüne göre (Otomobil/Kamyonet vb.) farklı hesaplar)
-            double ucret = (*it)->hesaplaUcret();
-            
-            // 3. Zaman bilgisini al (Log için)
-            time_t simdi = time(0);
-            std::string tarih = ctime(&simdi); // Çıkış tarihini metne çevir
+void Otopark::aracGiris(std::unique_ptr<Arac> yeniArac) {
+  int index = bosParkYeriBul();
 
-            // 4. Ekrana bilgi yazdır
-            std::cout << "\n--- ARAC CIKIS FISI ---" << std::endl;
-            std::cout << "Plaka       : " << plaka << std::endl;
-            std::cout << "Arac Turu   : " << (*it)->getTur() << std::endl;
-            std::cout << "Toplam Ucret: " << ucret << " TL" << std::endl;
-            std::cout << "-----------------------" << std::endl;
+  if (index == -1) {
+    std::cout << "\n╔══════════════════════════════════════╗\n";
+    std::cout << "║  HATA: Otopark dolu!                 ║\n";
+    std::cout << "╚══════════════════════════════════════╝\n";
+    return; // unique_ptr otomatik olarak temizlenir
+  }
 
-            // 5. OtoparkLog.txt dosyasına ARŞİVLE (Kalıcı kayıt)
-            std::ofstream logDosyasi("OtoparkLog.txt", std::ios::app); // 'app' modu sonuna ekleme yapar
-            if (logDosyasi.is_open()) {
-                logDosyasi << "--- ISLEM KAYDI ---" << std::endl;
-                logDosyasi << "Plaka: " << plaka << " | Tur: " << (*it)->getTur() << std::endl;
-                logDosyasi << "Ucret: " << ucret << " TL" << std::endl;
-                logDosyasi << "Tarih: " << tarih; // ctime zaten \n içerir
-                logDosyasi << "-------------------" << std::endl;
-                logDosyasi.close();
-            }
+  // Park yerini işaretle
+  parkYerleri[index].setDurum(true, yeniArac->getPlaka());
 
-            // 6. Park Yerini Fiziksel Olarak Boşalt
-            // Park yerleri listesinde bu plakaya ait olan yeri bul ve durumunu 'boş' yap
-            for (auto& yer : parkYerleri) {
-                if (yer.getPlaka() == plaka) {
-                    yer.setDurum(false, ""); // Park yerini boşalt ve plakayı sil
-                    break;
-                }
-            }
+  std::cout << "\n╔══════════════════════════════════════╗\n";
+  std::cout << "║         ARAÇ GİRİŞ BİLGİSİ           ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║ Plaka    : " << std::left << std::setw(25)
+            << yeniArac->getPlaka() << " ║\n";
+  std::cout << "║ Tür      : " << std::left << std::setw(25)
+            << yeniArac->getTur() << " ║\n";
+  std::cout << "║ Park No  : " << std::left << std::setw(25) << (index + 1)
+            << " ║\n";
+  std::cout << "║ Kat      : " << std::left << std::setw(25)
+            << parkYerleri[index].getKat() << " ║\n";
+  std::cout << "╚══════════════════════════════════════╝\n";
 
-            // 7. BELLEK YÖNETİMİ (Kritik Adım)
-            delete *it;              // main.cpp'de 'new' ile ayrılan heap belleğini serbest bırak
-            aktifAraclar.erase(it);  // Vector içindeki pointer (adres) bilgisini sil
-            
-            bulundu = true;
-            std::cout << "Cikis islemi tamamlandi. Iyi yolculuklar!\n";
-            break;
-        }
-    }
-
-    if (!bulundu) {
-        std::cout << "HATA: " << plaka << " plakali arac otoparkta bulunamadi!\n";
-    }
+  // Ownership transfer
+  aktifAraclar.push_back(std::move(yeniArac));
 }
 
+void Otopark::aracCikis(const std::string &plaka) {
+  // Aracı bul
+  auto it = std::find_if(aktifAraclar.begin(), aktifAraclar.end(),
+                         [&plaka](const std::unique_ptr<Arac> &arac) {
+                           return arac->getPlaka() == plaka;
+                         });
 
-void Otopark::verileriKaydet() {
-    std::ofstream dosya("ParkYerleri.txt");
-    try {
-        if (!dosya.is_open()) throw std::runtime_error("ParkYerleri.txt acilamadi!");
+  if (it == aktifAraclar.end()) {
+    std::cout << "\n╔══════════════════════════════════════╗\n";
+    std::cout << "║  HATA: Araç bulunamadı!              ║\n";
+    std::cout << "║  Plaka: " << std::left << std::setw(28) << plaka << " ║\n";
+    std::cout << "╚══════════════════════════════════════╝\n";
+    return;
+  }
 
-        dosya << "Kat ID Dolu Plaka Tur Giris_Saniyesi Mevcut_Ucret Giris_Tarihi\n"; 
-        dosya << "------------------------------------------------------------------\n";
+  // Çıkış zamanını ayarla ve ücret hesapla
+  (*it)->setCikisSaati(std::time(nullptr));
+  double ucret = (*it)->hesaplaUcret();
 
-        for (const ParkYeri& yer : parkYerleri) {
-            std::string plaka = yer.isDolu() ? yer.getPlaka() : "BOS";
-            std::string tur = "YOK";
-            long int girisSaniye = 0;
-            double ucret = 0.0;
-            std::string okunabilirZaman = "---";
+  // Giriş ve çıkış zamanlarını formatla
+  std::time_t giris = (*it)->getGirisSaati();
+  std::time_t cikis = (*it)->getCikisSaati();
 
-            if (yer.isDolu()) {
-                // Aktif araçlar listesinde bu plakayı bul
-                for (Arac* a : aktifAraclar) {
-                    if (a->getPlaka() == yer.getPlaka()) {
-                        tur = a->getTur();
-                        girisSaniye = (long int)a->getGirisSaati();
-                        ucret = a->hesaplaUcret();
-                        
-                        // --- DÜZELTME BAŞLANGIÇ (Standart C++ Tarih Formatı) ---
-                        time_t t = a->getGirisSaati();
-                        char* dt = std::ctime(&t); // Standart ctime kullanımı
-                        okunabilirZaman = dt ? dt : "Hata";
-                        // ctime sonuna \n koyar, onu silelim:
-                        if (!okunabilirZaman.empty() && okunabilirZaman.back() == '\n') {
-                            okunabilirZaman.pop_back();
-                        }
-                        // --- DÜZELTME BİTİŞ ---
-                        break;
-                    }
-                }
-            }
+  char girisStr[26], cikisStr[26];
+  std::strftime(girisStr, 26, "%d/%m/%Y %H:%M:%S", std::localtime(&giris));
+  std::strftime(cikisStr, 26, "%d/%m/%Y %H:%M:%S", std::localtime(&cikis));
 
-            // Plakadaki boşlukları _ yap
-            std::string dosyaPlaka = plaka; // Orijinal plakayı bozmamak için kopya aldık
-            std::replace(dosyaPlaka.begin(), dosyaPlaka.end(), ' ', '_');
-            
-            dosya << yer.getKat() << " " 
-                  << yer.getId() << " " 
-                  << yer.isDolu() << " " 
-                  << dosyaPlaka << " "   // Düzeltilmiş plakayı yaz
-                  << tur << " " 
-                  << girisSaniye << " " 
-                  << ucret << " TL " 
-                  << okunabilirZaman << "\n";
-        }
-        dosya.close();
-        // std::cout << "Kaydedildi...\n"; // Konsolu kirletmemek için kapatabilirsin
-    } catch (const std::exception& e) { std::cerr << e.what() << "\n"; }
-}
+  // Süre hesapla
+  double sureSaat = std::difftime(cikis, giris) / 3600.0;
 
-void Otopark::verileriYukle() {
-    std::ifstream dosya("ParkYerleri.txt");
-    if (!dosya.is_open()) return;
+  // Çıkış fişi yazdır
+  std::cout << "\n╔══════════════════════════════════════╗\n";
+  std::cout << "║         ARAÇ ÇIKIŞ FİŞİ              ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║ Plaka       : " << std::left << std::setw(22) << plaka
+            << " ║\n";
+  std::cout << "║ Tür         : " << std::left << std::setw(22)
+            << (*it)->getTur() << " ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║ Giriş       : " << std::left << std::setw(22) << girisStr
+            << " ║\n";
+  std::cout << "║ Çıkış       : " << std::left << std::setw(22) << cikisStr
+            << " ║\n";
+  std::cout << "║ Süre        : " << std::fixed << std::setprecision(1)
+            << std::setw(18) << sureSaat << " saat ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║ TOPLAM ÜCRET: " << std::fixed << std::setprecision(2)
+            << std::setw(18) << ucret << " TL  ║\n";
+  std::cout << "╚══════════════════════════════════════╝\n";
+  std::cout << "       İyi yolculuklar dileriz!\n\n";
 
-    // Dosyanın ilk iki satırı başlık olduğu için onları boşa okuyup geçmeliyiz
-    std::string baslikSatiri;
-    std::getline(dosya, baslikSatiri); // "Kat ID..." satirini oku ve geç
-    std::getline(dosya, baslikSatiri); // "----..." satirini oku ve geç
+  // Log dosyasına kaydet
+  std::ofstream logDosyasi(LOG_DOSYASI, std::ios::app);
+  if (logDosyasi.is_open()) {
+    logDosyasi << "=== İŞLEM KAYDI ===\n";
+    logDosyasi << "Plaka: " << plaka << " | Tür: " << (*it)->getTur() << "\n";
+    logDosyasi << "Giriş: " << girisStr << " | Çıkış: " << cikisStr << "\n";
+    logDosyasi << "Süre: " << std::fixed << std::setprecision(1) << sureSaat
+               << " saat\n";
+    logDosyasi << "Ücret: " << std::fixed << std::setprecision(2) << ucret
+               << " TL\n";
+    logDosyasi << "==================\n\n";
+    logDosyasi.close();
+  }
 
-    int kat, id; 
-    bool dolu;
-    std::string plaka, tur;
-    long int girisZamani;
-    
-    // index sayacını kullanmak yerine dosyadan okunan ID'ye göre işlem yapmak daha güvenlidir
-    // ama senin kod yapını bozmadan index ile devam edelim.
-    int index = 0; 
-
-    // Dikkat: index kontrolünü while içine ekledim
-    while (index < (int)parkYerleri.size() && dosya >> kat >> id >> dolu >> plaka >> tur >> girisZamani) {
-        
-        // KRİTİK DÜZELTME: Satırın geri kalanını (Ücret, TL, Tarih vs.) oku ve yut.
-        // Böylece imleç bir sonraki satırın başına geçer.
-        std::string kalanSatir;
-        std::getline(dosya, kalanSatir); 
-
-        std::replace(plaka.begin(), plaka.end(), '_', ' ');
-
-        if (dolu && plaka != "BOS") {
-            parkYerleri[index].setDurum(true, plaka);
-            
-            Arac* yeniArac = nullptr;
-            if (tur == "Otomobil") yeniArac = new Otomobil(plaka);
-            else if (tur == "Kamyonet") yeniArac = new Kamyonet(plaka);
-            else if (tur == "Motosiklet") yeniArac = new Motosiklet(plaka);
-
-            if (yeniArac) {
-                yeniArac->setGirisSaati((time_t)girisZamani); 
-                aktifAraclar.push_back(yeniArac);
-            }
-        } else {
-            // Eğer dosyadaki o satır boşsa, park yerini de boş olarak ayarla/garantiye al
-             parkYerleri[index].setDurum(false, "");
-        }
-        index++;
+  // Park yerini boşalt
+  for (auto &yer : parkYerleri) {
+    if (yer.getPlaka() == plaka) {
+      yer.setDurum(false, "");
+      break;
     }
-    dosya.close();
-    std::cout << "Sistem basariyla geri yuklendi.\n";
+  }
+
+  // unique_ptr'ı listeden çıkar (otomatik delete)
+  aktifAraclar.erase(it);
 }
 
-// --- LINKER HATASINI ÇÖZEN EKSİK FONKSİYONLAR ---
+// ==================== LİSTELEME FONKSİYONLARI ====================
 
 void Otopark::bosYerleriListele() const {
-    std::cout << "\n--- BOS PARK YERLERI ---\n";
-    for (const auto& yer : parkYerleri) {
-        if (!yer.isDolu()) {
-            std::cout << "[K" << yer.getKat() << "-N" << yer.getId() << "] ";
-        }
+  std::cout << "\n╔══════════════════════════════════════╗\n";
+  std::cout << "║         BOŞ PARK YERLERİ             ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+
+  int bosCount = 0;
+  for (const auto &yer : parkYerleri) {
+    if (!yer.isDolu()) {
+      std::cout << "║  [K" << yer.getKat() << "-N" << std::setw(2)
+                << yer.getId() << "] ";
+      ++bosCount;
+      if (bosCount % 4 == 0) {
+        std::cout << "             ║\n";
+      }
     }
-    std::cout << "\n";
+  }
+
+  if (bosCount % 4 != 0) {
+    // Satırı tamamla
+    int kalan = 4 - (bosCount % 4);
+    for (int i = 0; i < kalan; ++i) {
+      std::cout << "        ";
+    }
+    std::cout << "             ║\n";
+  }
+
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║ Toplam Boş Yer: " << std::left << std::setw(20) << bosCount
+            << " ║\n";
+  std::cout << "╚══════════════════════════════════════╝\n";
 }
 
 void Otopark::durumRaporu() const {
-    std::cout << "\n=== OTOPARK MEVCUT DURUM ===\n";
-    for (const auto& yer : parkYerleri) {
-        std::cout << "Park No: " << yer.getId() 
-                  << " | Kat: " << yer.getKat() 
-                  << " | Durum: " << (yer.isDolu() ? "DOLU [" + yer.getPlaka() + "]" : "BOS") << "\n";
+  std::cout << "\n╔══════════════════════════════════════════════════════╗\n";
+  std::cout << "║              " << std::left << std::setw(38) << otoparkAdi
+            << " ║\n";
+  std::cout << "║                   DURUM RAPORU                       ║\n";
+  std::cout << "╠══════════════════════════════════════════════════════╣\n";
+  std::cout << "║ Toplam Kapasite : " << std::left << std::setw(33)
+            << parkYerleri.size() << " ║\n";
+  std::cout << "║ Dolu Park Yeri  : " << std::left << std::setw(33)
+            << aktifAraclar.size() << " ║\n";
+  std::cout << "║ Boş Park Yeri   : " << std::left << std::setw(33)
+            << bosYerSayisi() << " ║\n";
+  std::cout << "╠══════════════════════════════════════════════════════╣\n";
+
+  if (!aktifAraclar.empty()) {
+    std::cout << "║ MEVCUT ARAÇLAR:                                      ║\n";
+    std::cout << "╠══════════════════════════════════════════════════════╣\n";
+
+    for (const auto &arac : aktifAraclar) {
+      std::time_t giris = arac->getGirisSaati();
+      char girisStr[20];
+      std::strftime(girisStr, 20, "%H:%M", std::localtime(&giris));
+
+      std::cout << "║  " << std::left << std::setw(14) << arac->getPlaka()
+                << " | " << std::setw(12) << arac->getTur()
+                << " | Giriş: " << std::setw(8) << girisStr << "     ║\n";
     }
+  } else {
+    std::cout << "║ Otoparkta araç bulunmamaktadır.                      ║\n";
+  }
+
+  std::cout << "╚══════════════════════════════════════════════════════╝\n";
+}
+
+// ==================== DOSYA İŞLEMLERİ ====================
+
+void Otopark::verileriKaydet() const {
+  std::ofstream dosya(VERI_DOSYASI);
+
+  if (!dosya.is_open()) {
+    std::cerr << "HATA: " << VERI_DOSYASI << " dosyası açılamadı!\n";
+    return;
+  }
+
+  // CSV header
+  dosya << "PLAKA,TUR,GIRIS_ZAMANI\n";
+
+  // Her aktif aracı kaydet
+  for (const auto &arac : aktifAraclar) {
+    // Plakadaki boşlukları _ ile değiştir
+    std::string plaka = arac->getPlaka();
+    std::replace(plaka.begin(), plaka.end(), ' ', '_');
+
+    dosya << plaka << "," << arac->getTur() << ","
+          << static_cast<long>(arac->getGirisSaati()) << "\n";
+  }
+
+  dosya.close();
+}
+
+void Otopark::verileriYukle() {
+  std::ifstream dosya(VERI_DOSYASI);
+
+  if (!dosya.is_open()) {
+    // Dosya yoksa, ilk çalıştırma - hata değil
+    return;
+  }
+
+  std::string satir;
+
+  // Header satırını atla
+  std::getline(dosya, satir);
+
+  while (std::getline(dosya, satir)) {
+    if (satir.empty())
+      continue;
+
+    std::stringstream ss(satir);
+    std::string plaka, tur, zamanStr;
+
+    // CSV parse
+    std::getline(ss, plaka, ',');
+    std::getline(ss, tur, ',');
+    std::getline(ss, zamanStr, ',');
+
+    // Plakadaki _ karakterini boşluğa çevir
+    std::replace(plaka.begin(), plaka.end(), '_', ' ');
+
+    // Giriş zamanını parse et
+    long girisZamani = std::stol(zamanStr);
+
+    // Araç nesnesini oluştur
+    std::unique_ptr<Arac> arac;
+    if (tur == "Otomobil") {
+      arac = std::make_unique<Otomobil>(plaka);
+    } else if (tur == "Kamyonet") {
+      arac = std::make_unique<Kamyonet>(plaka);
+    } else if (tur == "Motosiklet") {
+      arac = std::make_unique<Motosiklet>(plaka);
+    } else {
+      continue; // Bilinmeyen tür, atla
+    }
+
+    // Giriş zamanını geri yükle
+    arac->setGirisSaati(static_cast<std::time_t>(girisZamani));
+
+    // Boş park yeri bul ve işaretle
+    int index = bosParkYeriBul();
+    if (index != -1) {
+      parkYerleri[index].setDurum(true, plaka);
+      aktifAraclar.push_back(std::move(arac));
+    }
+  }
+
+  dosya.close();
+
+  if (!aktifAraclar.empty()) {
+    std::cout << "\n╔══════════════════════════════════════╗\n";
+    std::cout << "║  Sistem başarıyla geri yüklendi.     ║\n";
+    std::cout << "║  Yüklenen araç sayısı: " << std::left << std::setw(14)
+              << aktifAraclar.size() << " ║\n";
+    std::cout << "╚══════════════════════════════════════╝\n";
+  }
 }

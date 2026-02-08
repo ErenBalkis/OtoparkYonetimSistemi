@@ -1,46 +1,52 @@
 #include "AracTurleri.h"
 
-/*
-    ARAÇ TÜRLERİ SINIFLARI
-    --------------------------------
-    - Arac soyut sınıfından türeyen somut sınıflardır
-    - Her araç türü kendi ücret tarifesini uygular
-    - Polimorfizm bu sınıflar üzerinden sağlanır
-*/
+/**
+ * ARAÇ TÜRLERİ IMPLEMENTASYONU
+ * --------------------------------
+ * - Her araç türü zaman bazlı ücret hesaplar
+ * - İlk saat baz ücrete dahildir
+ * - Sonraki her saat için saatlik ücret eklenir
+ */
 
 // ==================== OTOMOBİL ====================
 
-// Otomobil sınıfı constructor
-// Plaka bilgisi alınır ve Arac temel sınıfına iletilir
-Otomobil::Otomobil(std::string p)
-    : Arac(p, "Otomobil") {}
+Otomobil::Otomobil(const std::string &p)
+    : Arac(p, "Otomobil", BAZ_UCRET, SAATLIK_UCRET) {}
 
-// Otomobil için ücret hesaplama fonksiyonu
-// Sabit bir ücret döndürür (örnek senaryo)
 double Otomobil::hesaplaUcret() const {
-    return 50.0;
+  double saat = hesaplaSure();
+
+  // İlk saat baz ücrete dahil, sonraki saatler ek ücret
+  if (saat <= 1.0) {
+    return BAZ_UCRET;
+  }
+  return BAZ_UCRET + (saat - 1.0) * SAATLIK_UCRET;
 }
 
 // ==================== KAMYONET ====================
 
-// Kamyonet sınıfı constructor
-Kamyonet::Kamyonet(std::string p)
-    : Arac(p, "Kamyonet") {}
+Kamyonet::Kamyonet(const std::string &p)
+    : Arac(p, "Kamyonet", BAZ_UCRET, SAATLIK_UCRET) {}
 
-// Kamyonet için ücret hesaplama fonksiyonu
-// Otomobile göre daha yüksek ücret uygulanır
 double Kamyonet::hesaplaUcret() const {
-    return 80.0;
+  double saat = hesaplaSure();
+
+  if (saat <= 1.0) {
+    return BAZ_UCRET;
+  }
+  return BAZ_UCRET + (saat - 1.0) * SAATLIK_UCRET;
 }
 
 // ==================== MOTOSİKLET ====================
 
-// Motosiklet sınıfı constructor
-Motosiklet::Motosiklet(std::string p)
-    : Arac(p, "Motosiklet") {}
+Motosiklet::Motosiklet(const std::string &p)
+    : Arac(p, "Motosiklet", BAZ_UCRET, SAATLIK_UCRET) {}
 
-// Motosiklet için ücret hesaplama fonksiyonu
-// Daha küçük araç olduğu için daha düşük ücret uygulanır
 double Motosiklet::hesaplaUcret() const {
-    return 30.0;
+  double saat = hesaplaSure();
+
+  if (saat <= 1.0) {
+    return BAZ_UCRET;
+  }
+  return BAZ_UCRET + (saat - 1.0) * SAATLIK_UCRET;
 }

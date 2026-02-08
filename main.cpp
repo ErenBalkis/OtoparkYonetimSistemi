@@ -1,145 +1,188 @@
+#include "AracTurleri.h"
+#include "Otopark.h"
 #include <iostream>
 #include <limits>
-#include "Otopark.h"
-#include "AracTurleri.h"
+#include <memory>
+#include <string>
 
-/*
-    OTOPARK YÖNETİM SİSTEMİ
-    - Menü tabanlı konsol uygulaması
-    - Polimorfizm, kalıtım ve soyut sınıf kullanımı içerir
-    - Hata yönetimi try-catch ile sağlanmıştır
-*/
+/**
+ * OTOPARK YÖNETİM SİSTEMİ - ANA PROGRAM
+ * --------------------------------
+ * - Menü tabanlı konsol uygulaması
+ * - C++17 standartlarına uygun
+ * - Smart pointer ile bellek güvenliği
+ * - Zaman bazlı ücretlendirme
+ */
 
+// ==================== GİRDİ DOĞRULAMA ====================
+
+/**
+ * Güvenli tamsayı girişi alır
+ * @param mesaj Kullanıcıya gösterilecek mesaj
+ * @param minVal Minimum kabul edilebilir değer
+ * @param maxVal Maksimum kabul edilebilir değer
+ * @return Doğrulanmış tamsayı değeri
+ */
+int inputValidator(const std::string &mesaj, int minVal, int maxVal) {
+  int deger;
+
+  while (true) {
+    std::cout << mesaj;
+
+    if (std::cin >> deger) {
+      // Giriş tamponunu temizle
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+      // Aralık kontrolü
+      if (deger >= minVal && deger <= maxVal) {
+        return deger;
+      }
+      std::cout << "\n[!] Geçersiz değer! " << minVal << " ile " << maxVal
+                << " arasında bir değer giriniz.\n";
+    } else {
+      // Geçersiz giriş (harf vb.)
+      std::cin.clear();
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      std::cout << "\n[!] Geçersiz giriş! Lütfen bir sayı giriniz.\n";
+    }
+  }
+}
+
+/**
+ * Boşluklu metin girişi alır (örn: plaka)
+ * @param mesaj Kullanıcıya gösterilecek mesaj
+ * @return Girilen metin
+ */
+std::string getStringInput(const std::string &mesaj) {
+  std::string deger;
+  std::cout << mesaj;
+  std::getline(std::cin, deger);
+  return deger;
+}
+
+// ==================== MENÜ YAZDIRMA ====================
+
+void menuYazdir() {
+  std::cout << "\n";
+  std::cout << "╔══════════════════════════════════════╗\n";
+  std::cout << "║   OTOPARK YÖNETİM SİSTEMİ v2.0       ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║  1. Araç Girişi Yap                  ║\n";
+  std::cout << "║  2. Araç Çıkışı Yap                  ║\n";
+  std::cout << "║  3. Boş Park Yerlerini Listele       ║\n";
+  std::cout << "║  4. Durum Raporu                     ║\n";
+  std::cout << "║  5. Demo Verisi Yükle (Test)         ║\n";
+  std::cout << "║  0. Çıkış                            ║\n";
+  std::cout << "╚══════════════════════════════════════╝\n";
+}
+
+void aracTuruMenusu() {
+  std::cout << "\n╔══════════════════════════════════════╗\n";
+  std::cout << "║         ARAÇ TÜRÜ SEÇİNİZ            ║\n";
+  std::cout << "╠══════════════════════════════════════╣\n";
+  std::cout << "║  1. Otomobil  (Baz: 50 TL + 10 TL/s) ║\n";
+  std::cout << "║  2. Kamyonet  (Baz: 80 TL + 15 TL/s) ║\n";
+  std::cout << "║  3. Motosiklet(Baz: 30 TL +  5 TL/s) ║\n";
+  std::cout << "╚══════════════════════════════════════╝\n";
+}
+
+// ==================== ANA FONKSİYON ====================
 
 int main() {
+  // Otopark nesnesini oluştur
+  Otopark otopark("İstanbul Üniversitesi Otoparkı", 20);
 
-    // Otopark nesnesini oluştur (Örn: "Merkez Otopark", 20 Kapasite)
-    Otopark otopark("Istanbul Uni Otopark", 20);
+  // Önceki oturumdan verileri yükle
+  otopark.verileriYukle();
 
-    // Verileri dosyadan yükle 
-    otopark.verileriYukle(); 
+  bool devam = true;
 
-    int secim;          // Kullanıcı menü seçimi
-    bool devam = true;  // Program döngü kontrolü
+  // Ana menü döngüsü
+  while (devam) {
+    menuYazdir();
 
-    // Ana menü döngüsü
-    while (devam) {
-        // Menü ekranı
-        std::cout << "\n=== OTOPARK YONETIM SISTEMI ===\n";
-        std::cout << "1. Arac Girisi Yap\n";
-        std::cout << "2. Arac Cikisi Yap\n";
-        std::cout << "3. Bos Park Yerlerini Listele\n";
-        std::cout << "4. Durum Raporu\n";
-        std::cout << "5. Test Verisi Yukle (Demo Modu)\n";
-        std::cout << "0. Cikis\n";
-        std::cout << "Seciminiz: ";
+    int secim = inputValidator("Seçiminiz (0-5): ", 0, 5);
 
-        try {
-            // Menü seçimi sayısal mı kontrolü
-            if (!(std::cin >> secim)) {
-                throw std::runtime_error("Gecersiz giris! Sayi giriniz.");
-            }
+    switch (secim) {
+    // ---------------- ARAÇ GİRİŞİ ----------------
+    case 1: {
+      aracTuruMenusu();
+      int turSecim = inputValidator("Tür seçimi (1-3): ", 1, 3);
 
-            // Giriş tamponunu temizle
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      std::string plaka = getStringInput("Plaka giriniz: ");
 
-            switch (secim) {
+      if (plaka.empty()) {
+        std::cout << "\n[!] Plaka boş olamaz!\n";
+        break;
+      }
 
-                // ---------------- ARAÇ GİRİŞİ ----------------
-                case 1: {
-                    int turSecim;
+      // Seçilen türe göre araç oluştur (smart pointer ile)
+      std::unique_ptr<Arac> yeniArac;
 
-                    // Araç türü seçimi
-                    std::cout << "\n--- Arac Turu Seciniz ---\n";
-                    std::cout << "1. Otomobil\n2. Kamyonet\n3. Motosiklet\n";
-                    std::cin >> turSecim;
+      switch (turSecim) {
+      case 1:
+        yeniArac = std::make_unique<Otomobil>(plaka);
+        break;
+      case 2:
+        yeniArac = std::make_unique<Kamyonet>(plaka);
+        break;
+      case 3:
+        yeniArac = std::make_unique<Motosiklet>(plaka);
+        break;
+      }
 
-                    // Tampon temizleme
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                    // Geçersiz tür kontrolü
-                    if (turSecim < 1 || turSecim > 3) {
-                        std::cout << "Hatali arac turu secimi!\n";
-                        break;
-                    }
-
-                    // Plaka bilgisi (boşluklu giriş desteklenir)
-                    std::string plaka;
-                    std::cout << "Plaka giriniz: ";
-                    std::getline(std::cin, plaka);
-
-                    // Polimorfik araç işaretçisi
-                    Arac* yeniArac = nullptr;
-
-                    // Seçilen türe göre nesne oluşturma
-                    if (turSecim == 1)
-                        yeniArac = new Otomobil(plaka);
-                    else if (turSecim == 2)
-                        yeniArac = new Kamyonet(plaka);
-                    else if (turSecim == 3)
-                        yeniArac = new Motosiklet(plaka);
-
-                    // Otoparka araç ekleme (hata yakalama ile)
-                    try {
-                        otopark.aracGiris(yeniArac);
-                        std::cout << "Arac girisi basarili.\n";
-                    }
-                    catch (...) {
-                        // Hata durumunda bellek sızıntısını önle
-                        delete yeniArac;
-                        throw;
-                    }
-                    break;
-                }
-
-                // ---------------- ARAÇ ÇIKIŞI ----------------
-                case 2: {
-                    std::string plaka;
-                    std::cout << "Cikis yapacak aracin plakasi: ";
-                    std::getline(std::cin, plaka);
-
-                    otopark.aracCikis(plaka);
-                    break;
-                }
-
-                // ---------------- BOŞ YER LİSTELE ----------------
-                case 3:
-                    otopark.bosYerleriListele();
-                    break;
-
-                // ---------------- DURUM RAPORU ----------------
-                case 4:
-                    otopark.durumRaporu();
-                    break;
-
-                // ---------------- TEST / DEMO MODU ----------------
-                case 5:
-                    // Farklı türlerde araçlar eklenerek polimorfizm gösterilir
-                    otopark.aracGiris(new Otomobil("34 ABC 123"));
-                    otopark.aracGiris(new Kamyonet("34 XYZ 789"));
-                    otopark.aracGiris(new Motosiklet("35 KL 55"));
-                    std::cout << "Test verileri eklendi.\n";
-                    break;
-
-                // ---------------- PROGRAMDAN ÇIKIŞ ----------------
-                case 0:
-                    std::cout << "Veriler kaydediliyor ve cikiliyor...\n";
-                     otopark.verileriKaydet();
-                    devam = false;
-                    break;
-
-                // ---------------- HATALI SEÇİM ----------------
-                default:
-                    std::cout << "Gecersiz menu secimi, tekrar deneyin!\n";
-            }
-        }
-        catch (const std::exception& e) {
-            // Genel hata yakalama
-            std::cerr << "\nHATA: " << e.what() << "\n";
-            std::cin.clear(); // Hata bayrağını temizle
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Tamponu temizle
-        }
+      // Otoparka araç ekle (ownership transfer)
+      otopark.aracGiris(std::move(yeniArac));
+      break;
     }
 
-    return 0;
+    // ---------------- ARAÇ ÇIKIŞI ----------------
+    case 2: {
+      std::string plaka = getStringInput("Çıkış yapacak aracın plakası: ");
+
+      if (plaka.empty()) {
+        std::cout << "\n[!] Plaka boş olamaz!\n";
+        break;
+      }
+
+      otopark.aracCikis(plaka);
+      break;
+    }
+
+    // ---------------- BOŞ YER LİSTELE ----------------
+    case 3:
+      otopark.bosYerleriListele();
+      break;
+
+    // ---------------- DURUM RAPORU ----------------
+    case 4:
+      otopark.durumRaporu();
+      break;
+
+    // ---------------- DEMO / TEST MODU ----------------
+    case 5: {
+      std::cout << "\n[i] Demo verileri yükleniyor...\n";
+
+      // Farklı türlerde araçlar ekle (polimorfizm gösterimi)
+      otopark.aracGiris(std::make_unique<Otomobil>("34 ABC 123"));
+      otopark.aracGiris(std::make_unique<Kamyonet>("34 XYZ 789"));
+      otopark.aracGiris(std::make_unique<Motosiklet>("35 KL 55"));
+
+      std::cout << "\n[✓] 3 adet test aracı eklendi.\n";
+      break;
+    }
+
+    // ---------------- PROGRAMDAN ÇIKIŞ ----------------
+    case 0: {
+      std::cout << "\n╔══════════════════════════════════════╗\n";
+      std::cout << "║  Veriler kaydediliyor...             ║\n";
+      std::cout << "║  Güle güle!                          ║\n";
+      std::cout << "╚══════════════════════════════════════╝\n";
+      devam = false;
+      break;
+    }
+    }
+  }
+
+  return 0;
 }

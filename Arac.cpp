@@ -1,56 +1,47 @@
 #include "Arac.h"
 
-/*
-    Arac SINIFI
-    - Tüm araç türleri için temel (base) sınıftır
-    - Plaka, araç türü, giriş ve çıkış saatlerini tutar
-    - Polimorfizm için bilgileriYazdir() fonksiyonu kullanılır
-*/
+/**
+ * Arac SINIFI IMPLEMENTASYONU
+ * - Tüm araç türleri için temel (base) sınıftır
+ * - Zaman bazlı ücretlendirme altyapısı sağlar
+ * - std::unique_ptr ile uyumlu tasarlanmıştır
+ */
 
 // ---------------- CONSTRUCTOR ----------------
-// Araç nesnesi oluşturulurken plaka ve tür atanır
-// Giriş saati otomatik olarak programın çalıştığı an alınır
-Arac::Arac(std::string p, std::string t)
-    : plaka(p), tur(t) {
+Arac::Arac(const std::string &p, const std::string &t, double baz,
+           double saatlik)
+    : plaka(p), tur(t), bazUcret(baz), saatlikUcret(saatlik) {
 
-    // Aracın otoparka giriş zamanı (şu anki zaman)
-    girisSaati = std::time(nullptr);
-
-    // Çıkış saati başlangıçta 0 olarak ayarlanır
-    cikisSaati = 0;
+  girisSaati = std::time(nullptr); // Şu anki zaman
+  cikisSaati = 0;                  // Henüz çıkış yapılmadı
 }
 
-// ---------------- SETTER ----------------
-// Araç çıkışı yapıldığında çıkış saatini günceller
-void Arac::setCikisSaati(std::time_t saat) {
-    cikisSaati = saat;
+// ---------------- SAAT HESAPLAMA ----------------
+double Arac::hesaplaSure() const {
+  std::time_t bitisSaati = (cikisSaati != 0) ? cikisSaati : std::time(nullptr);
+  double farkSaniye = std::difftime(bitisSaati, girisSaati);
+
+  // Saat cinsine çevir ve yukarı yuvarla (minimum 1 saat)
+  double saat = std::ceil(farkSaniye / 3600.0);
+  return (saat < 1.0) ? 1.0 : saat;
 }
 
-// ---------------- GETTER'LAR ----------------
+// ---------------- SETTER METOTLARI ----------------
+void Arac::setGirisSaati(std::time_t saat) { girisSaati = saat; }
 
-// Aracın plaka bilgisini döndürür
-std::string Arac::getPlaka() const {
-    return plaka;
-}
+void Arac::setCikisSaati(std::time_t saat) { cikisSaati = saat; }
 
-// Aracın türünü döndürür (Otomobil, Kamyonet, Motosiklet vb.)
-std::string Arac::getTur() const {
-    return tur;
-}
+// ---------------- GETTER METOTLARI ----------------
+std::string Arac::getPlaka() const { return plaka; }
 
-// Aracın otoparka giriş saatini döndürür
-std::time_t Arac::getGirisSaati() const {
-    return girisSaati;
-}
+std::string Arac::getTur() const { return tur; }
+
+std::time_t Arac::getGirisSaati() const { return girisSaati; }
+
+std::time_t Arac::getCikisSaati() const { return cikisSaati; }
 
 // ---------------- BİLGİ YAZDIRMA ----------------
-// Sanal (virtual) fonksiyon olarak kullanılır
-// Türe bağlı olarak türetilmiş sınıflar tarafından ezilebilir
 void Arac::bilgileriYazdir() const {
-
-    // Araç bilgileri ekrana yazdırılır
-    std::cout << "Plaka: " << plaka
-              << " | Tür: " << tur
-              << " | Giriş Saati: " << std::ctime(&girisSaati);
+  std::cout << "Plaka: " << plaka << " | Tür: " << tur
+            << " | Giriş Saati: " << std::ctime(&girisSaati);
 }
-
